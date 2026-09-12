@@ -1,0 +1,67 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink-900: #101B2D;
+  --ink-700: #223354;
+  --ink-500: #3A4E73;
+
+  --parchment-50: #FAF7F1;
+  --parchment-100: #F2EDE2;
+
+  --brass-500: #B8863E;
+  --brass-600: #9C6F2F;
+
+  --sage-600: #3F7A5C;
+  --sage-100: #E4EFE8;
+
+  --clay-600: #8A5A3B;
+  --clay-100: #F0E5DC;
+
+  --slate-500: #5B6B82;
+  --slate-300: #A9B4C4;
+
+  --line: #DCD4C4;
+  --white: #FFFFFF;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --shadow-panel: 0 1px 2px rgba(16, 27, 45, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink-900);
+  background: var(--parchment-50);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink-900);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--brass-500);
+  outline-offset: 2px;
+}
