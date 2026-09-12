@@ -21,15 +21,13 @@ if (token) {
     }
 }
 
-    useEffect(() => {
-        if (studentId) {
-            loadResults();
-        } else {
-            setMessage("Please login to view your results.");
-        }
-    }, [studentId]);
-
+useEffect(() => {
     const loadResults = async () => {
+        if (!studentId) {
+            setMessage("Please login to view your results.");
+            return;
+        }
+
         try {
             const response = await api.get(
                 `/allocate/results/${studentId}`
@@ -44,6 +42,9 @@ if (token) {
             setMessage("Unable to load allocation results.");
         }
     };
+
+    loadResults();
+}, [studentId]);
 
     return (
         <div className="results-dash">
