@@ -30,14 +30,14 @@ function StudentDashboard() {
     }
   }
 
-  useEffect(() => {
-    loadSubjects();
-    loadSections();
+ useEffect(() => {
+  loadSubjects();
+  loadSections();
 
-    if (studentId) {
-      loadSubmittedPreferences();
-    }
-  }, []);
+  if (studentId) {
+    loadSubmittedPreferences();
+  }
+}, [studentId]);
 
   const loadSubjects = async () => {
     try {
