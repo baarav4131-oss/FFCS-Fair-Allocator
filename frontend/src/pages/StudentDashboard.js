@@ -63,15 +63,15 @@ function StudentDashboard() {
     }
   }, [studentId]);
 
-  useEffect(() => {
-    loadSubjects();
-    loadSections();
+ useEffect(() => {
+  loadSubjects();
+  loadSections();
+
+  if (studentId) {
     loadSubmittedPreferences();
-  }, [
-    loadSubjects,
-    loadSections,
-    loadSubmittedPreferences
-  ]);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const hasSubmittedSubject = (subjectId) => {
     return submittedPreferences.some(
