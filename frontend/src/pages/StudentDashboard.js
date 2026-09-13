@@ -3,9 +3,13 @@ import { useNavigate } from "react-router-dom";
 import api from "../api";
 import "../styles/StudentDashboard.css";
 
+const MIN_CREDITS = 15;
+const MAX_CREDITS = 30;
+
 function StudentDashboard() {
   const [subjects, setSubjects] = useState([]);
   const [sections, setSections] = useState([]);
+  const [submittedPreferences, setSubmittedPreferences] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [message, setMessage] = useState("");
@@ -15,20 +19,24 @@ function StudentDashboard() {
 
   const token = localStorage.getItem("token");
 
-let studentId = null;
+  let studentId = null;
 
-if (token) {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    studentId = payload.studentId;
-  } catch (error) {
-    console.log("Invalid token");
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      studentId = payload.studentId;
+    } catch (error) {
+      console.log("Invalid token");
+    }
   }
-}
 
   useEffect(() => {
     loadSubjects();
     loadSections();
+
+    if (studentId) {
+      loadSubmittedPreferences();
+    }
   }, []);
 
   const loadSubjects = async () => {
@@ -50,6 +58,45 @@ if (token) {
       setMessageType("error");
     }
   };
+
+  const loadSubmittedPreferences = async () => {
+    try {
+      const response = await api.get(`/preferences/${studentId}`);
+      setSubmittedPreferences(response.data);
+    } catch (error) {
+      console.log("Failed to load submitted preferences");
+    }
+  };
+
+  const hasSubmittedSubject = (subjectId) => {
+    return submittedPreferences.some(
+      (preference) =>
+        String(preference.subjectId) === String(subjectId)
+    );
+  };
+
+  const totalCredits = submittedPreferences.reduce(
+    (total, preference) => {
+      const subject = subjects.find(
+        (subject) =>
+          String(subject._id) === String(preference.subjectId)
+      );
+
+      return total + (subject?.credits || 0);
+    },
+    0
+  );
+
+  const selectedSubjectData = subjects.find(
+    (subject) =>
+      String(subject._id) === String(selectedSubject)
+  );
+
+  const selectedSubjectCredits =
+    selectedSubjectData?.credits || 0;
+
+  const projectedCredits =
+    totalCredits + selectedSubjectCredits;
 
   const handleTeacherSelect = (teacherId) => {
     if (selectedTeachers.includes(teacherId)) {
@@ -77,8 +124,24 @@ if (token) {
       return;
     }
 
+    if (hasSubmittedSubject(selectedSubject)) {
+      setMessage(
+        "You have already submitted preferences for this subject."
+      );
+      setMessageType("error");
+      return;
+    }
+
     if (selectedTeachers.length === 0) {
       setMessage("Please select at least one teacher.");
+      setMessageType("error");
+      return;
+    }
+
+    if (projectedCredits > MAX_CREDITS) {
+      setMessage(
+        `Cannot select this subject. Maximum allowed credits are ${MAX_CREDITS}.`
+      );
       setMessageType("error");
       return;
     }
@@ -90,8 +153,15 @@ if (token) {
         rankedTeacherIds: selectedTeachers
       });
 
-      setMessage("Preferences submitted successfully!");
+      setMessage(
+        `Preferences submitted successfully! Total credits: ${projectedCredits}`
+      );
       setMessageType("success");
+
+      setSelectedSubject("");
+      setSelectedTeachers([]);
+
+      await loadSubmittedPreferences();
 
     } catch (error) {
       setMessage(
@@ -102,17 +172,43 @@ if (token) {
     }
   };
 
+  const finalizeRegistration = () => {
+    if (totalCredits < MIN_CREDITS) {
+      setMessage(
+        `You need at least ${MIN_CREDITS} credits to complete registration. You currently have ${totalCredits} credits.`
+      );
+      setMessageType("error");
+      return;
+    }
+
+    if (totalCredits > MAX_CREDITS) {
+      setMessage(
+        `Maximum allowed credits are ${MAX_CREDITS}.`
+      );
+      setMessageType("error");
+      return;
+    }
+
+    setMessage(
+      `Registration completed successfully with ${totalCredits} credits!`
+    );
+    setMessageType("success");
+  };
+
+  const availableSubjects = subjects.filter(
+    (subject) => !hasSubmittedSubject(subject._id)
+  );
+
   const availableSections = sections.filter(
     (section) =>
-      section.subject_id === selectedSubject ||
-      section.subject_id?._id === selectedSubject
+      String(section.subject_id) === String(selectedSubject) ||
+      String(section.subject_id?._id) === String(selectedSubject)
   );
 
   return (
     <div className="dash">
 
       {/* HEADER */}
-
       <header className="dash-header">
 
         <div className="dash-header__brand">
@@ -126,19 +222,20 @@ if (token) {
           <span className="badge badge--tier1">
             Student
           </span>
+
           <button
-  type="button"
-  onClick={() => navigate("/results")}
-  style={{
-    background: "transparent",
-    border: "1px solid rgba(255,255,255,0.25)",
-    color: "white",
-    padding: "7px 12px",
-    borderRadius: "4px"
-  }}
->
-  Results
-</button>
+            type="button"
+            onClick={() => navigate("/results")}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "white",
+              padding: "7px 12px",
+              borderRadius: "4px"
+            }}
+          >
+            Results
+          </button>
 
           <button
             type="button"
@@ -153,9 +250,7 @@ if (token) {
               padding: "7px 12px",
               borderRadius: "4px"
             }}
-            
           >
-            
             Logout
           </button>
 
@@ -164,7 +259,6 @@ if (token) {
       </header>
 
       {/* BODY */}
-
       <main className="dash-body">
 
         <div className="dash-intro">
@@ -179,7 +273,6 @@ if (token) {
         </div>
 
         {/* STATS */}
-
         <div className="dash-stats">
 
           <div className="stat stat--primary">
@@ -221,19 +314,64 @@ if (token) {
           <div className="stat">
 
             <div className="stat__value">
-              {selectedSubject ? "1" : "0"}
+              {totalCredits}
             </div>
 
             <div className="stat__label">
-              Subject Selected
+              Selected Credits
             </div>
 
           </div>
 
         </div>
 
-        {/* PREFERENCE PANEL */}
+        {/* CREDIT INFORMATION */}
+        <div
+          style={{
+            marginBottom: "24px",
+            padding: "18px 22px",
+            background: "rgba(255,255,255,0.75)",
+            border: "1px solid rgba(20,30,45,0.12)",
+            borderRadius: "8px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "20px",
+            flexWrap: "wrap"
+          }}
+        >
 
+          <div>
+
+            <strong>
+              Credit Requirement
+            </strong>
+
+            <p style={{ margin: "6px 0 0" }}>
+              Minimum: {MIN_CREDITS} credits
+              &nbsp; | &nbsp;
+              Maximum: {MAX_CREDITS} credits
+            </p>
+
+          </div>
+
+          <div>
+
+            <strong>
+              Current Credits: {totalCredits}
+            </strong>
+
+            {selectedSubjectData && (
+              <p style={{ margin: "6px 0 0" }}>
+                After this course: {projectedCredits} credits
+              </p>
+            )}
+
+          </div>
+
+        </div>
+
+        {/* PREFERENCE PANEL */}
         <section className="ballot">
 
           <div className="ballot__head">
@@ -267,13 +405,15 @@ if (token) {
                 Choose a subject
               </option>
 
-              {subjects.map((subject) => (
+              {availableSubjects.map((subject) => (
+
                 <option
                   key={subject._id}
                   value={subject._id}
                 >
-                  {subject.code} — {subject.name}
+                  {subject.code} — {subject.name} ({subject.credits} credits)
                 </option>
+
               ))}
 
             </select>
@@ -281,7 +421,25 @@ if (token) {
           </label>
 
           {selectedSubject && (
+
             <div>
+
+              {selectedSubjectData && (
+                <div
+                  style={{
+                    margin: "15px 0",
+                    fontSize: "14px"
+                  }}
+                >
+                  <strong>
+                    {selectedSubjectData.name}
+                  </strong>
+                  {" — "}
+                  {selectedSubjectData.credits} credits
+                  {" | "}
+                  Projected total: {projectedCredits}/{MAX_CREDITS}
+                </div>
+              )}
 
               <div className="ballot__head">
 
@@ -314,6 +472,7 @@ if (token) {
                       selectedTeachers.includes(section._id);
 
                     return (
+
                       <li
                         key={section._id}
                         className={
@@ -329,9 +488,11 @@ if (token) {
                         </span>
 
                         <span className="ballot__teacher">
+
                           <strong>
                             {section.teacher_name}
                           </strong>
+
                         </span>
 
                         <span className="ballot__seats">
@@ -339,6 +500,7 @@ if (token) {
                         </span>
 
                       </li>
+
                     );
 
                   })}
@@ -348,7 +510,6 @@ if (token) {
               )}
 
               {/* RANKING */}
-
               {selectedTeachers.length > 0 && (
 
                 <div className="ranking-box">
@@ -367,6 +528,7 @@ if (token) {
                         );
 
                       return (
+
                         <div
                           className="ranking-item"
                           key={teacherId}
@@ -381,6 +543,7 @@ if (token) {
                           </strong>
 
                         </div>
+
                       );
 
                     }
@@ -394,15 +557,20 @@ if (token) {
                 className="ballot__submit"
                 type="button"
                 onClick={submitPreferences}
-                disabled={selectedTeachers.length === 0}
+                disabled={
+                  selectedTeachers.length === 0 ||
+                  projectedCredits > MAX_CREDITS
+                }
               >
                 Submit Preferences
               </button>
 
             </div>
+
           )}
 
           {message && (
+
             <div
               className={
                 messageType === "error"
@@ -413,7 +581,63 @@ if (token) {
             >
               {message}
             </div>
+
           )}
+
+        </section>
+
+        {/* REGISTRATION COMPLETION */}
+        <section
+          style={{
+            marginTop: "24px",
+            padding: "22px",
+            background: "rgba(255,255,255,0.75)",
+            border: "1px solid rgba(20,30,45,0.12)",
+            borderRadius: "8px"
+          }}
+        >
+
+          <h2>
+            Complete Registration
+          </h2>
+
+          <p>
+            You need between {MIN_CREDITS} and {MAX_CREDITS}
+            {" "}credits to complete your registration.
+          </p>
+
+          {totalCredits < MIN_CREDITS && (
+
+            <p>
+              You need{" "}
+              <strong>
+                {MIN_CREDITS - totalCredits}
+              </strong>{" "}
+              more credits.
+            </p>
+
+          )}
+
+          {totalCredits >= MIN_CREDITS &&
+            totalCredits <= MAX_CREDITS && (
+
+              <p>
+                Your credit requirement is satisfied.
+              </p>
+
+          )}
+
+          <button
+            className="ballot__submit"
+            type="button"
+            onClick={finalizeRegistration}
+            disabled={
+              totalCredits < MIN_CREDITS ||
+              totalCredits > MAX_CREDITS
+            }
+          >
+            Finalize Registration
+          </button>
 
         </section>
 
