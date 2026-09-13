@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import "../styles/StudentDashboard.css";
@@ -30,16 +30,7 @@ function StudentDashboard() {
     }
   }
 
- useEffect(() => {
-  loadSubjects();
-  loadSections();
-
-  if (studentId) {
-    loadSubmittedPreferences();
-  }
-}, [studentId]);
-
-  const loadSubjects = async () => {
+  const loadSubjects = useCallback(async () => {
     try {
       const response = await api.get("/subjects");
       setSubjects(response.data);
@@ -47,9 +38,9 @@ function StudentDashboard() {
       setMessage("Failed to load subjects");
       setMessageType("error");
     }
-  };
+  }, []);
 
-  const loadSections = async () => {
+  const loadSections = useCallback(async () => {
     try {
       const response = await api.get("/teacher-sections");
       setSections(response.data);
@@ -57,16 +48,30 @@ function StudentDashboard() {
       setMessage("Failed to load teacher sections");
       setMessageType("error");
     }
-  };
+  }, []);
 
-  const loadSubmittedPreferences = async () => {
+  const loadSubmittedPreferences = useCallback(async () => {
+    if (!studentId) {
+      return;
+    }
+
     try {
       const response = await api.get(`/preferences/${studentId}`);
       setSubmittedPreferences(response.data);
     } catch (error) {
       console.log("Failed to load submitted preferences");
     }
-  };
+  }, [studentId]);
+
+  useEffect(() => {
+    loadSubjects();
+    loadSections();
+    loadSubmittedPreferences();
+  }, [
+    loadSubjects,
+    loadSections,
+    loadSubmittedPreferences
+  ]);
 
   const hasSubmittedSubject = (subjectId) => {
     return submittedPreferences.some(
