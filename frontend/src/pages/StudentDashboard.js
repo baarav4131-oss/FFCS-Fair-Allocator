@@ -63,7 +63,7 @@ function StudentDashboard() {
     }
   }, [studentId]);
 
- useEffect(() => {
+useEffect(() => {
   loadSubjects();
   loadSections();
 
