@@ -3,24 +3,63 @@ const Preference = require("../models/Preference");
 
 const router = express.Router();
 
-// Create preference
+
+// CREATE PREFERENCE
 router.post("/", async (req, res) => {
     try {
-        const preference = await Preference.findOneAndUpdate(
-            {
-                studentId: req.body.studentId,
-                subjectId: req.body.subjectId
-            },
-            {
-                rankedTeacherIds: req.body.rankedTeacherIds
-            },
-            {
-                new: true,
-                upsert: true
-            }
-        );
+        const {
+            studentId,
+            subjectId,
+            rankedTeacherIds
+        } = req.body;
 
-        res.status(201).json(preference);
+        // Check required fields
+        if (!studentId || !subjectId || !rankedTeacherIds) {
+            return res.status(400).json({
+                message: "Student, subject and teacher preferences are required."
+            });
+        }
+
+        // Check at least one teacher
+        if (rankedTeacherIds.length === 0) {
+            return res.status(400).json({
+                message: "Please select at least one teacher."
+            });
+        }
+
+        // Prevent duplicate teachers
+        const uniqueTeacherIds = new Set(rankedTeacherIds);
+
+        if (uniqueTeacherIds.size !== rankedTeacherIds.length) {
+            return res.status(400).json({
+                message: "A teacher cannot be selected more than once."
+            });
+        }
+
+        // Check if preference already exists for this
+        // student and subject
+        const existingPreference = await Preference.findOne({
+            studentId,
+            subjectId
+        });
+
+        if (existingPreference) {
+            return res.status(400).json({
+                message: "You have already submitted preferences for this subject."
+            });
+        }
+
+        // Create preference
+        const preference = await Preference.create({
+            studentId,
+            subjectId,
+            rankedTeacherIds
+        });
+
+        res.status(201).json({
+            message: "Preferences submitted successfully.",
+            preference
+        });
 
     } catch (error) {
         console.log(error);
@@ -31,7 +70,8 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Get student's preferences
+
+// GET PREFERENCES FOR A STUDENT
 router.get("/:studentId", async (req, res) => {
     try {
         const preferences = await Preference.find({
@@ -39,37 +79,97 @@ router.get("/:studentId", async (req, res) => {
         });
 
         res.json(preferences);
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.log(error);
+
+        res.status(500).json({
+            message: error.message
+        });
     }
 });
 
-// Update preference
+
+// UPDATE PREFERENCE
 router.put("/:id", async (req, res) => {
     try {
+        const {
+            rankedTeacherIds
+        } = req.body;
+
+        // Check that teacher list exists
+        if (!rankedTeacherIds || rankedTeacherIds.length === 0) {
+            return res.status(400).json({
+                message: "Please select at least one teacher."
+            });
+        }
+
+        // Prevent duplicate teachers
+        const uniqueTeacherIds = new Set(rankedTeacherIds);
+
+        if (uniqueTeacherIds.size !== rankedTeacherIds.length) {
+            return res.status(400).json({
+                message: "A teacher cannot be selected more than once."
+            });
+        }
+
         const preference = await Preference.findByIdAndUpdate(
             req.params.id,
-            req.body,
-            { new: true }
+            {
+                rankedTeacherIds
+            },
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
-        res.json(preference);
+        if (!preference) {
+            return res.status(404).json({
+                message: "Preference not found."
+            });
+        }
+
+        res.json({
+            message: "Preference updated successfully.",
+            preference
+        });
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.log(error);
+
+        res.status(500).json({
+            message: error.message
+        });
     }
 });
 
-// Delete preference
+
+// DELETE PREFERENCE
 router.delete("/:id", async (req, res) => {
     try {
-        await Preference.findByIdAndDelete(req.params.id);
+        const preference = await Preference.findByIdAndDelete(
+            req.params.id
+        );
+
+        if (!preference) {
+            return res.status(404).json({
+                message: "Preference not found."
+            });
+        }
 
         res.json({
             message: "Preference withdrawn successfully"
         });
+
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.log(error);
+
+        res.status(500).json({
+            message: error.message
+        });
     }
 });
+
 
 module.exports = router;

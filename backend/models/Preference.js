@@ -20,4 +20,10 @@ const preferenceSchema = new mongoose.Schema({
     }
 });
 
+// One preference list per student per subject
+preferenceSchema.index(
+    { studentId: 1, subjectId: 1 },
+    { unique: true }
+);
+
 module.exports = mongoose.model("Preference", preferenceSchema);
