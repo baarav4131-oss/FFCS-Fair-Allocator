@@ -1,20 +1,12 @@
 const express = require("express");
 const Subject = require("../models/Subject");
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
 const router = express.Router();
 
-// Add subject
-router.post("/", async (req, res) => {
-    try {
-        const subject = await Subject.create(req.body);
-        res.status(201).json(subject);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// Get all subjects
-router.get("/", async (req, res) => {
+// GET all subjects (Authenticated students & admins)
+router.get("/", authMiddleware, async (req, res) => {
     try {
         const subjects = await Subject.find();
         res.json(subjects);
@@ -23,25 +15,40 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Update subject
-router.put("/:id", async (req, res) => {
+// CREATE subject (Admin only)
+router.post("/", authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const subject = await Subject.create(req.body);
+        res.status(201).json(subject);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// UPDATE subject (Admin only)
+router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const subject = await Subject.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true }
         );
-
+        if (!subject) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
         res.json(subject);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// Delete subject
-router.delete("/:id", async (req, res) => {
+// DELETE subject (Admin only)
+router.delete("/:id", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        await Subject.findByIdAndDelete(req.params.id);
+        const subject = await Subject.findByIdAndDelete(req.params.id);
+        if (!subject) {
+            return res.status(404).json({ message: "Subject not found" });
+        }
         res.json({ message: "Subject deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });

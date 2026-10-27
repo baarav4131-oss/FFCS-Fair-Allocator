@@ -1,0 +1,14 @@
+# DA1 Legacy Dockerfile (Vulnerable: node:20-alpine EOL, runs as root, includes npm/yarn tooling)
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --production
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["node", "server.js"]

@@ -1,11 +1,9 @@
-function adminMiddleware(req, res, next) {
-    if (req.role !== "admin") {
-        return res.status(403).json({
-            message: "Admin access required"
-        });
-    }
+const { authorize } = require("./authMiddleware");
 
-    next();
-}
+/**
+ * Admin Middleware
+ * Restricts access exclusively to users with the 'admin' role.
+ */
+const adminMiddleware = authorize("admin");
 
 module.exports = adminMiddleware;

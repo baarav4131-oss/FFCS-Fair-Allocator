@@ -1,26 +1,21 @@
 const express = require("express");
 const Preference = require("../models/Preference");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-
-// CREATE PREFERENCE
-router.post("/", async (req, res) => {
+// CREATE PREFERENCE (studentId derived securely from JWT - closes DA1 vulnerability)
+router.post("/", authMiddleware, async (req, res) => {
     try {
-        const {
-            studentId,
-            subjectId,
-            rankedTeacherIds
-        } = req.body;
+        const studentId = req.studentId; // Enforced from authenticated JWT
+        const { subjectId, rankedTeacherIds } = req.body;
 
-        // Check required fields
-        if (!studentId || !subjectId || !rankedTeacherIds) {
+        if (!subjectId || !rankedTeacherIds) {
             return res.status(400).json({
-                message: "Student, subject and teacher preferences are required."
+                message: "Subject and teacher preferences are required."
             });
         }
 
-        // Check at least one teacher
         if (rankedTeacherIds.length === 0) {
             return res.status(400).json({
                 message: "Please select at least one teacher."
@@ -29,15 +24,13 @@ router.post("/", async (req, res) => {
 
         // Prevent duplicate teachers
         const uniqueTeacherIds = new Set(rankedTeacherIds);
-
         if (uniqueTeacherIds.size !== rankedTeacherIds.length) {
             return res.status(400).json({
                 message: "A teacher cannot be selected more than once."
             });
         }
 
-        // Check if preference already exists for this
-        // student and subject
+        // Check if preference already exists for this student and subject
         const existingPreference = await Preference.findOne({
             studentId,
             subjectId
@@ -49,7 +42,6 @@ router.post("/", async (req, res) => {
             });
         }
 
-        // Create preference
         const preference = await Preference.create({
             studentId,
             subjectId,
@@ -62,18 +54,19 @@ router.post("/", async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// GET PREFERENCES FOR A STUDENT
-router.get("/:studentId", async (req, res) => {
+// GET PREFERENCES FOR A STUDENT (Restricted to self or admin)
+router.get("/:studentId", authMiddleware, async (req, res) => {
     try {
+        if (req.studentId !== req.params.studentId && req.role !== "admin") {
+            return res.status(403).json({
+                message: "Forbidden: You cannot view preferences of other students."
+            });
+        }
+
         const preferences = await Preference.find({
             studentId: req.params.studentId
         });
@@ -81,54 +74,42 @@ router.get("/:studentId", async (req, res) => {
         res.json(preferences);
 
     } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// UPDATE PREFERENCE
-router.put("/:id", async (req, res) => {
+// UPDATE PREFERENCE (Strict ownership check - closes DA1 vulnerability)
+router.put("/:id", authMiddleware, async (req, res) => {
     try {
-        const {
-            rankedTeacherIds
-        } = req.body;
+        const { rankedTeacherIds } = req.body;
 
-        // Check that teacher list exists
         if (!rankedTeacherIds || rankedTeacherIds.length === 0) {
             return res.status(400).json({
                 message: "Please select at least one teacher."
             });
         }
 
-        // Prevent duplicate teachers
         const uniqueTeacherIds = new Set(rankedTeacherIds);
-
         if (uniqueTeacherIds.size !== rankedTeacherIds.length) {
             return res.status(400).json({
                 message: "A teacher cannot be selected more than once."
             });
         }
 
-        const preference = await Preference.findByIdAndUpdate(
-            req.params.id,
-            {
-                rankedTeacherIds
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
+        // Fetch preference and check ownership
+        const preference = await Preference.findById(req.params.id);
         if (!preference) {
-            return res.status(404).json({
-                message: "Preference not found."
+            return res.status(404).json({ message: "Preference not found." });
+        }
+
+        if (preference.studentId.toString() !== req.studentId && req.role !== "admin") {
+            return res.status(403).json({
+                message: "Forbidden: You cannot modify another student's preference."
             });
         }
+
+        preference.rankedTeacherIds = rankedTeacherIds;
+        await preference.save();
 
         res.json({
             message: "Preference updated successfully.",
@@ -136,40 +117,33 @@ router.put("/:id", async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// DELETE PREFERENCE
-router.delete("/:id", async (req, res) => {
+// DELETE PREFERENCE (Strict ownership check - closes DA1 vulnerability)
+router.delete("/:id", authMiddleware, async (req, res) => {
     try {
-        const preference = await Preference.findByIdAndDelete(
-            req.params.id
-        );
-
+        const preference = await Preference.findById(req.params.id);
         if (!preference) {
-            return res.status(404).json({
-                message: "Preference not found."
+            return res.status(404).json({ message: "Preference not found." });
+        }
+
+        if (preference.studentId.toString() !== req.studentId && req.role !== "admin") {
+            return res.status(403).json({
+                message: "Forbidden: You cannot delete another student's preference."
             });
         }
+
+        await Preference.findByIdAndDelete(req.params.id);
 
         res.json({
             message: "Preference withdrawn successfully"
         });
 
     } catch (error) {
-        console.log(error);
-
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
-
 
 module.exports = router;

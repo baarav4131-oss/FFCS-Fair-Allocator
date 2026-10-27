@@ -12,7 +12,17 @@ const studentSchema = new mongoose.Schema({
         type: String,
         enum: ["student", "admin"],
         default: "student"
+    },
+
+    mfa_enabled: {
+        type: Boolean,
+        default: false
+    },
+
+    mfa_secret: {
+        type: String,
+        default: null
     }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Student", studentSchema);
