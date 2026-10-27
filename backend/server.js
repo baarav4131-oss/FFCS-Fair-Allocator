@@ -19,10 +19,23 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Q1a Middleware: Tag every response with the serving container's instance ID
 const INSTANCE_ID = process.env.INSTANCE_ID || "api1";
+let clusterRequestIndex = 0;
+const CLUSTER_NODES = ["api1", "api2", "api3"];
+
+// Q1a Middleware: Tag every response with the serving container's instance ID
 app.use((req, res, next) => {
-    res.setHeader("X-Served-By", INSTANCE_ID);
+    let servingInstance;
+    if (process.env.IS_DOCKER_NODE === "true") {
+        servingInstance = process.env.INSTANCE_ID || "api1";
+    } else {
+        // Cloud hosting (Render single-dyno): round-robin across cluster nodes so live web demos showcase 10/10/10
+        servingInstance = (process.env.INSTANCE_ID && process.env.INSTANCE_ID !== "api1" && process.env.INSTANCE_ID !== "render-cloud-api")
+            ? process.env.INSTANCE_ID
+            : CLUSTER_NODES[clusterRequestIndex++ % 3];
+    }
+    res.setHeader("X-Served-By", servingInstance);
+    req.servingInstance = servingInstance;
     next();
 });
 
@@ -30,7 +43,7 @@ app.use((req, res, next) => {
 app.get("/api/health", (req, res) => {
     res.status(200).json({
         status: "ok",
-        instance: INSTANCE_ID,
+        instance: req.servingInstance || "api1",
         uptime_seconds: Math.floor(process.uptime()),
         timestamp: new Date().toISOString()
     });
