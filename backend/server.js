@@ -35,6 +35,15 @@ app.get("/api/health", (req, res) => {
 });
 
 // API Routes
+app.get("/api", (req, res) => {
+    res.json({
+        message: "FFCS Fair Allocator Scaled API (DA3)",
+        instance: INSTANCE_ID,
+        status: "online",
+        health: "/api/health"
+    });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/allocate", allocationRoutes);
