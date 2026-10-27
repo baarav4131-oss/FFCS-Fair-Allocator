@@ -14,7 +14,9 @@ const preferenceRoutes = require("./routes/preferences");
 const allocationRoutes = require("./routes/allocation");
 
 // Middleware: CORS & JSON Body Parsing
-app.use(cors());
+app.use(cors({
+    exposedHeaders: ["X-Served-By"]
+}));
 app.use(express.json());
 
 // Q1a Middleware: Tag every response with the serving container's instance ID
