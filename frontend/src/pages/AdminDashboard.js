@@ -224,12 +224,12 @@ function AdminDashboard() {
                 </section>
 
                 {/* ========================================================= */}
-                {/* DA3 CLOUD INFRASTRUCTURE & SECURITY TELEMETRY PANEL       */}
+                {/* CLOUD INFRASTRUCTURE & SECURITY TELEMETRY PANEL           */}
                 {/* ========================================================= */}
                 <section className="da3-panel">
                     <div className="da3-header">
                         <div>
-                            <p className="admin-eyebrow">BACSE344 CLOUD INFRASTRUCTURE (DA3)</p>
+                            <p className="admin-eyebrow">INFRASTRUCTURE &amp; SECURITY</p>
                             <h2>Cluster Telemetry &amp; Security Shield</h2>
                         </div>
                         <div className="da3-badge-group">
@@ -241,9 +241,9 @@ function AdminDashboard() {
 
                     <div className="da3-grid">
 
-                        {/* Card 1: Q1(a) Live Load Distribution Probe */}
+                        {/* Card 1: Live Load Distribution Probe */}
                         <div className="da3-card">
-                            <h3>⚡ Live Load Balancer Probe (Q1a)</h3>
+                            <h3>⚡ Live Load Balancer Probe</h3>
                             <p>
                                 Send 30 rapid healthcheck requests through Nginx to demonstrate real-time round-robin traffic distribution across <code>api1</code>, <code>api2</code>, and <code>api3</code>.
                             </p>
@@ -306,9 +306,9 @@ function AdminDashboard() {
                             )}
                         </div>
 
-                        {/* Card 2: Q2(b) TOTP QR Enrollment */}
+                        {/* Card 2: TOTP QR Enrollment */}
                         <div className="da3-card">
-                            <h3>📱 TOTP Authenticator Enrollment (Q2b)</h3>
+                            <h3>📱 TOTP Authenticator Enrollment</h3>
                             <p>
                                 Generate an RFC 6238 QR code to pair Google Authenticator or Microsoft Authenticator with this administrator account.
                             </p>
