@@ -19,6 +19,6 @@ EXPOSE 5000
 
 # Continuous healthcheck for load balancer monitoring
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget -qO- http://localhost:5000/api/health || exit 1
+  CMD wget -qO- http://127.0.0.1:5000/api/health || exit 1
 
 CMD ["node", "server.js"]
