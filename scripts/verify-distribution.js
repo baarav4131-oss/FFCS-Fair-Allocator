@@ -25,8 +25,8 @@ function fetchHealth(url) {
             });
         });
         req.on("error", reject);
-        req.setTimeout(2000, () => {
-            req.destroy(new Error("Timeout"));
+        req.setTimeout(5000, () => {
+            req.destroy(new Error("Timeout after 5000ms"));
         });
     });
 }
