@@ -66,7 +66,7 @@ async function runDistributionTest() {
     ]);
 
     const isBalanced = tally.api1 === 10 && tally.api2 === 10 && tally.api3 === 10;
-    console.log(`Result: ${tally.api1}/${tally.api2}/${tally.api3} -> ${isBalanced ? "PERFECT 10/10/10 DISTRIBUTION VERIFIED! (Full Marks)" : "Distributed across instances"}`);
+    console.log(`Result: ${tally.api1}/${tally.api2}/${tally.api3} -> ${isBalanced ? "PERFECT 10/10/10 DISTRIBUTION VERIFIED" : "Distributed across instances"}`);
     console.log("================================================================================");
 }
 

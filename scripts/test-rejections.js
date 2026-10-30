@@ -173,7 +173,7 @@ async function runRejectionTests() {
     console.table(results);
 
     const allPassed = results.every(r => r.Result === "PASSED");
-    console.log(`\nOVERALL SUITE STATUS: ${allPassed ? "ALL 5 REJECTION BOUNDARY TESTS PASSED (100% Full Marks)" : "SOME TESTS FAILED"}`);
+    console.log(`\nOVERALL SUITE STATUS: ${allPassed ? "ALL 5 REJECTION BOUNDARY TESTS PASSED (100%)" : "SOME TESTS FAILED"}`);
     console.log("================================================================================");
 }
 

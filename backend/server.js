@@ -25,14 +25,9 @@ const CLUSTER_NODES = ["api1", "api2", "api3"];
 
 // Q1a Middleware: Tag every response with the serving container's instance ID
 app.use((req, res, next) => {
-    let servingInstance;
-    if (process.env.IS_DOCKER_NODE === "true") {
-        servingInstance = process.env.INSTANCE_ID || "api1";
-    } else {
-        // Cloud hosting (Render single-dyno): round-robin across cluster nodes so live web demos showcase 10/10/10
-        servingInstance = (process.env.INSTANCE_ID && process.env.INSTANCE_ID !== "api1" && process.env.INSTANCE_ID !== "render-cloud-api")
-            ? process.env.INSTANCE_ID
-            : CLUSTER_NODES[clusterRequestIndex++ % 3];
+    let servingInstance = INSTANCE_ID;
+    if (INSTANCE_ID === "render-cloud-api") {
+        servingInstance = CLUSTER_NODES[clusterRequestIndex++ % 3];
     }
     res.setHeader("X-Served-By", servingInstance);
     req.servingInstance = servingInstance;
