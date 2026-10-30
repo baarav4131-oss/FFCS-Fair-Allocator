@@ -4,7 +4,6 @@
  * Matches hey output format: Req/sec, Avg Latency, p50, p90, p95, p99, and Status Code tally.
  */
 const http = require("http");
-const url = require("url");
 const fs = require("fs");
 const path = require("path");
 
@@ -19,13 +18,13 @@ const payloadData = fs.existsSync(payloadPath)
 
 function sendSingleRequest(targetUrl, payload) {
     return new Promise((resolve) => {
-        const parsed = url.parse(targetUrl);
+        const parsed = new URL(targetUrl);
         const startTime = process.hrtime();
 
         const req = http.request({
             hostname: parsed.hostname,
-            port: parsed.port || 80,
-            path: parsed.path,
+            port: parsed.port || (parsed.protocol === "https:" ? 443 : 80),
+            path: parsed.pathname + parsed.search,
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
